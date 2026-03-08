@@ -11,14 +11,14 @@
     <style>
       :root {
         color-scheme: light;
-        --bg: #f6f4ee;
-        --panel: #fffdf8;
-        --ink: #1f2a37;
-        --muted: #58667a;
-        --line: #d8d3c7;
-        --accent: #14532d;
-        --accent-soft: #e7f5ec;
-        --code: #f4f1e8;
+        --bg: #ffffff;
+        --panel: #ffffff;
+        --ink: #111111;
+        --muted: #444444;
+        --line: #b5b5b5;
+        --accent: #111111;
+        --accent-soft: #ffffff;
+        --code: #f7f7f7;
       }
 
       * {
@@ -27,140 +27,140 @@
 
       body {
         margin: 0;
-        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-        background:
-          radial-gradient(circle at top left, #ffffff 0, #ffffff 14rem, transparent 14rem),
-          linear-gradient(180deg, #efe9dc 0, var(--bg) 12rem, var(--bg) 100%);
+        font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", monospace;
+        background: var(--bg);
         color: var(--ink);
       }
 
       a {
         color: var(--accent);
+        text-underline-offset: 0.18rem;
       }
 
       code,
       pre {
-        font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+        font-family: inherit;
       }
 
       .page {
-        max-width: 72rem;
+        max-width: 96ch;
         margin: 0 auto;
-        padding: 2.5rem 1.25rem 4rem;
+        padding: 1.5rem 1rem 3rem;
       }
 
       .hero {
-        padding: 1.5rem;
-        border: 1px solid var(--line);
-        background: rgba(255, 253, 248, 0.92);
-        box-shadow: 0 0.75rem 2rem rgba(31, 42, 55, 0.06);
+        padding: 0 0 1rem;
+        border-bottom: 1px solid var(--line);
+        background: transparent;
+        box-shadow: none;
       }
 
       .eyebrow {
         margin: 0 0 0.5rem;
-        font-size: 0.8rem;
-        letter-spacing: 0.12em;
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
       .hero h1 {
         margin: 0;
-        font-size: clamp(2rem, 4vw, 3.5rem);
-        line-height: 1.05;
+        font-size: clamp(1.35rem, 3vw, 1.8rem);
+        line-height: 1.3;
+        font-weight: 700;
       }
 
       .hero p {
         margin: 0.75rem 0 0;
-        max-width: 44rem;
-        color: var(--muted);
+        max-width: none;
+        color: inherit;
+        line-height: 1.6;
       }
 
       .hero-links {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 1rem;
+        gap: 1rem;
+        margin-top: 0.9rem;
       }
 
       .hero-links a {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.55rem 0.8rem;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        text-decoration: none;
+        display: inline-block;
+        padding: 0;
+        border: 0;
+        background: transparent;
       }
 
       .status {
-        margin: 1rem 0 0;
+        margin: 0.9rem 0 0;
         color: var(--muted);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
       }
 
       .document {
-        margin-top: 1.5rem;
-        padding: 1.75rem;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        box-shadow: 0 1rem 3rem rgba(31, 42, 55, 0.05);
+        margin-top: 1.25rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
       }
 
       .document h1,
       .document h2,
       .document h3,
       .document h4 {
-        line-height: 1.15;
-        scroll-margin-top: 1.5rem;
+        line-height: 1.35;
+        scroll-margin-top: 1rem;
+        font-weight: 700;
       }
 
       .document h1 {
-        font-size: 2.2rem;
+        font-size: 1.45rem;
       }
 
       .document h2 {
-        margin-top: 2rem;
-        font-size: 1.5rem;
+        margin-top: 1.9rem;
+        font-size: 1.2rem;
       }
 
       .document h3 {
-        margin-top: 1.5rem;
-        font-size: 1.15rem;
+        margin-top: 1.35rem;
+        font-size: 1.05rem;
       }
 
       .document p,
       .document li {
-        line-height: 1.7;
+        line-height: 1.65;
       }
 
       .document table {
         width: 100%;
         border-collapse: collapse;
-        margin: 1.25rem 0;
-        font-size: 0.95rem;
+        margin: 1rem 0 1.35rem;
+        font-size: 0.94rem;
       }
 
       .document th,
       .document td {
-        padding: 0.7rem 0.8rem;
+        padding: 0.55rem 0.65rem;
         border: 1px solid var(--line);
         vertical-align: top;
       }
 
       .document th {
-        background: #f1ece1;
+        background: #fafafa;
         text-align: left;
       }
 
       .document pre {
         overflow-x: auto;
-        padding: 1rem;
+        padding: 0.85rem 1rem;
         background: var(--code);
         border: 1px solid var(--line);
       }
 
       .document code {
-        padding: 0.12rem 0.3rem;
+        padding: 0.05rem 0.2rem;
         background: var(--code);
       }
 
@@ -170,41 +170,41 @@
       }
 
       .document blockquote {
-        margin: 1.25rem 0;
+        margin: 1rem 0;
         padding-left: 1rem;
-        border-left: 0.25rem solid var(--line);
+        border-left: 1px solid var(--line);
         color: var(--muted);
       }
 
       .document hr {
         border: 0;
         border-top: 1px solid var(--line);
-        margin: 2rem 0;
+        margin: 1.75rem 0;
       }
 
       .document .mermaid {
-        margin: 1.5rem 0;
-        padding: 1rem;
+        margin: 1rem 0 1.35rem;
+        padding: 0.85rem;
         background: var(--accent-soft);
-        border: 1px solid #bad7c4;
+        border: 1px solid var(--line);
         overflow-x: auto;
       }
 
       .error {
         padding: 1rem;
-        border: 1px solid #d7b4b4;
-        background: #fff1f1;
-        color: #7a2222;
+        border: 1px solid var(--line);
+        background: #fbfbfb;
+        color: var(--ink);
       }
 
       @media (max-width: 720px) {
         .page {
-          padding: 1.25rem 0.75rem 2rem;
+          padding: 1rem 0.75rem 2rem;
         }
 
         .hero,
         .document {
-          padding: 1rem;
+          padding: 0;
         }
 
         .document table {
@@ -217,10 +217,10 @@
   <body>
     <main class="page">
       <section class="hero">
-        <p class="eyebrow">GitHub Pages</p>
+        <p class="eyebrow">Request For Comments / Draft / March 2026</p>
         <h1>Agent Relay Protocol (ARP)</h1>
         <p>
-          Public HTML rendering of the current ARP RFC draft, generated directly from
+          Plain monospace HTML rendering of the current ARP RFC draft, generated directly from
           <code>arp-rfc.md</code>.
         </p>
         <div class="hero-links">
@@ -295,7 +295,18 @@
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "loose",
-          theme: "neutral",
+          theme: "base",
+          themeVariables: {
+            fontFamily: '"SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", monospace',
+            primaryColor: "#ffffff",
+            primaryTextColor: "#111111",
+            primaryBorderColor: "#111111",
+            secondaryColor: "#ffffff",
+            tertiaryColor: "#ffffff",
+            lineColor: "#111111",
+            clusterBkg: "#ffffff",
+            clusterBorder: "#111111",
+          },
         });
 
         await mermaid.run({ querySelector: ".mermaid" });
