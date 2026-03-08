@@ -9,6 +9,30 @@
 
 ---
 
+## Table of Contents
+
+- [Why This RFC Exists](#why-this-rfc-exists)
+- [High-Level Exchange View](#high-level-exchange-view)
+- [Abstract](#abstract)
+- [1. Problem Statement](#1-problem-statement)
+- [2. Core Concepts](#2-core-concepts)
+- [3. Architecture](#3-architecture)
+- [4. AGRP Session Protocol (AGSP)](#4-agrp-session-protocol-agsp)
+- [5. Realm Lifecycle](#5-realm-lifecycle)
+- [6. Control Plane State Model](#6-control-plane-state-model)
+- [7. Agent Addressing](#7-agent-addressing)
+- [8. Audit Log](#8-audit-log)
+- [9. Exchange-to-Exchange Communication](#9-exchange-to-exchange-communication)
+- [10. Mesh of Meshes (Federation)](#10-mesh-of-meshes-federation)
+- [11. Relationship to Kubernetes](#11-relationship-to-kubernetes)
+- [12. Relationship to Adjacent Protocols](#12-relationship-to-adjacent-protocols)
+- [13. Open Questions](#13-open-questions)
+- [14. Out of Scope](#14-out-of-scope)
+- [15. References](#15-references)
+- [Contributors](#contributors)
+
+---
+
 ## Why This RFC Exists
 
 For a non-technical reader, AGRP is a shared switchboard for human and agent work. It exists so one realm can:
