@@ -241,6 +241,8 @@
 
       const content = document.getElementById("content");
       const status = document.getElementById("status");
+      let currentSectionId = "";
+      const renderedDiagramSections = new Set();
 
       const escapeHtml = (value) =>
         value
@@ -256,12 +258,162 @@
           .replace(/\s+/g, "-")
           .replace(/-+/g, "-");
 
+      const diagramMermaidBySection = {
+        "why-this-rfc": `
+flowchart LR
+    people[People] --> clients[Chat / CLI / IDE]
+    clients --> room[Workspace Room]
+    room --> agents[Agent Sidecars + Agents]
+    room --> resources[Files / Context / Resources]
+    room --> audit[Audit Log]
+    control[Control Plane] --> room
+    control --> lifecycle[Create / Pause / Resume / Route]
+    room <-->|trusted links| other[Other Workspaces]
+`,
+        "high-level-room-view": `
+flowchart TB
+    human1[Human User] -->|direct or via bridge| room[Workspace Room]
+    human2[Human Channel] -->|bridge session| room
+    peer[Peer Room / Federated Link] -->|trusted ASP link| room
+    cp[Control Plane] -->|routing + policy + lifecycle| room
+    cp -->|spawn / suspend / resume| rlm[Runtime Lifecycle Manager]
+    room -->|delegated text + signed mandate| sidecar1[Sidecar: agent1]
+    room -->|delegated text + signed mandate| sidecar2[Sidecar: agent2]
+    room -->|resource_call| ers[Environment / Resource Service]
+    room --> audit[Audit Log]
+    sidecar1 -->|invoke / poll| agent1[Passive Agent 1]
+    sidecar2 -->|invoke / poll| agent2[Passive Agent 2]
+    rlm -->|spawns + resumes| sidecar1
+    rlm -->|spawns + resumes| sidecar2
+    rlm -->|provisions| ers
+`,
+        "13-position-in-the-agentic-stack": `
+flowchart TB
+    app[Application Layer<br/>Agent business logic and task orchestration]
+    a2a[A2A<br/>Agent-to-agent collaboration]
+    arp[ARP<br/>Switching Fabric + Workspaces]
+    asp[ASP<br/>JSON-RPC sessions and envelopes]
+    transport[Transport<br/>gRPC / WebSocket / TCP]
+    mcp[MCP<br/>Tool and Data Access]
+    acp[ACP<br/>Editor Integration]
+    app --> a2a --> arp --> asp --> transport
+    mcp -. orthogonal .-> arp
+    acp -. orthogonal .-> arp
+`,
+        "32-workspace-topology-single-workspace": `
+flowchart TB
+    cp[Control Plane] -->|manage lifecycle| room[Room]
+    cli[CLI] -->|ASP| room
+    telegram[Telegram Bridge] -->|ASP| room
+    filebridge[File Mount Bridge] -->|ASP| room
+    filebridge --> fuse[FUSE mount at ~/relay/ns/proj]
+    room -->|ASP via attached sidecar| sidecar[Sidecar: claude]
+    sidecar -->|invoke / poll locally| agent[Agent: claude]
+`,
+        "33-multi-room-topology": `
+flowchart TB
+    cp[Control Plane<br/>Raft cluster]
+    rooma[Room A<br/>ws: myns/myproject]
+    roomb[Room B<br/>ws: myns/infra]
+    ag1[ag1]
+    ag2[ag2]
+    ag3[ag3]
+    ag4[ag4]
+    cp -->|push routing tables| rooma
+    cp -->|push routing tables| roomb
+    rooma --> ag1
+    rooma --> ag2
+    roomb --> ag3
+    roomb --> ag4
+    ag2 --- ag3
+`,
+        "42-connection-lifecycle": `
+sequenceDiagram
+    participant P as Participant
+    participant R as Room
+    P->>R: asp/initialize<br/>protocol_version, role,<br/>participant_info, capabilities, workspace
+    R-->>P: initialize_response<br/>room_info, capabilities,<br/>members, routing_snapshot
+    P->>R: asp/ready
+    Note over P,R: Bidirectional messaging
+`,
+        "49-approval-flow": `
+sequenceDiagram
+    participant Agent
+    participant Room
+    participant Humans
+    Agent->>Room: approval_request<br/>action=shell, command=bun test, risk=low
+    Room->>Humans: fan-out to role:human
+    Humans-->>Room: approval_response<br/>approved=true, approver=itbaron
+    Room-->>Agent: approval_response
+    Agent->>Room: tool_result<br/>status=success
+    Room->>Humans: fan-out tool_result
+`,
+        "51-state-machine": `
+stateDiagram-v2
+    [*] --> Creating: create
+    Creating --> Running: environment ready / agent session established
+    Running --> Suspended: suspend
+    Suspended --> Running: resume
+    Running --> Terminated: terminate
+`,
+        "92-message-forwarding-flow": `
+sequenceDiagram
+    participant Claude as claude
+    participant RoomA as Room A
+    participant RoomB as Room B
+    participant Infra as infra-agent sidecar
+    Claude->>RoomA: to arp://myns/infra/infra-agent
+    RoomA->>RoomA: lookup local routing table
+    RoomA->>RoomB: forward ASP envelope<br/>source_workspace=myns/myproject<br/>destination_workspace=myns/infra<br/>room_src=room-7a3f ttl=7
+    RoomB->>Infra: deliver local ASP message
+`,
+        "101-intra-organization-federation": `
+flowchart LR
+    subgraph A[Cluster: example-mesh]
+        cpa[CP-A]
+        rooma1[Room A1]
+        a1[ag1]
+        a2[ag2]
+        cpa --> rooma1
+        rooma1 --> a1
+        rooma1 --> a2
+    end
+    subgraph B[Cluster: personal]
+        cpb[CP-B]
+        roomb1[Room B1]
+        roomb2[Room B2]
+        b1[ag3]
+        b2[ag4]
+        b3[ag5]
+        cpb --> roomb1
+        cpb --> roomb2
+        roomb1 --> b1
+        roomb2 --> b2
+        roomb2 --> b3
+    end
+    rooma1 <-->|ASP| roomb1
+`,
+        "102-cross-organization-federation-via-a2a": `
+sequenceDiagram
+    participant Client as External A2A Client
+    participant Boundary as Boundary Room
+    participant Mesh as Internal ARP Mesh
+    Client->>Boundary: GET /.well-known/agent.json
+    Boundary-->>Client: proxied Agent Card
+    Client->>Boundary: POST /tasks
+    Boundary->>Mesh: wrap in ASP envelope and route internally
+    Mesh-->>Boundary: internal ASP response
+    Boundary-->>Client: proxied A2A response
+`,
+      };
+
       marked.use({
         gfm: true,
         renderer: {
           heading(token) {
             const html = this.parser.parseInline(token.tokens);
             const id = slugify(token.text ?? "");
+            currentSectionId = id;
             return `<h${token.depth} id="${id}">${html}</h${token.depth}>`;
           },
           code(token) {
@@ -270,6 +422,16 @@
 
             if (language === "mermaid") {
               return `<pre class="mermaid">${escapeHtml(code)}</pre>`;
+            }
+
+            const diagram =
+              !language &&
+              !renderedDiagramSections.has(currentSectionId) &&
+              diagramMermaidBySection[currentSectionId];
+
+            if (diagram) {
+              renderedDiagramSections.add(currentSectionId);
+              return `<pre class="mermaid">${escapeHtml(diagram)}</pre>`;
             }
 
             const className = language ? ` class="language-${escapeHtml(language)}"` : "";

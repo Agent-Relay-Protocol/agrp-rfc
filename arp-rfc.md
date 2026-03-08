@@ -21,42 +21,41 @@ For a non-technical reader, ARP is a shared switchboard for human and agent work
 
 Without ARP, the current protocol stack solves individual links such as editor-to-agent or agent-to-tool communication, but not the shared workspace fabric around them. This RFC defines that missing layer.
 
-```mermaid
-flowchart LR
-    People["People"] --> Clients["Chat / CLI / IDE"]
-    Clients --> Room["Workspace Room"]
-    Room --> Agents["Agent Sidecars + Agents"]
-    Room --> Resources["Files / Context / Resources"]
-    Room --> Audit["Audit Log"]
-    Control["Control Plane"] --> Room
-    Control --> Lifecycle["Create / Pause / Resume / Route"]
-    Room <-->|Trusted links| Other["Other Workspaces"]
+```
+ [People]
+    |
+ [Chat / CLI / IDE]
+    |
+ [Workspace Room] ---------------- trusted links ---------------- [Other Workspaces]
+    | \
+    |  +--> [Agent Sidecars + Agents]
+    |  +--> [Files / Context / Resources]
+    |
+    +--> [Audit Log]
+
+ [Control Plane] -------------------------------> [Workspace Room]
+ [Control Plane] -------------------------------> [Create / Pause / Resume / Route]
 ```
 
 ## High-Level Room View
 
 At runtime, ARP centers work around a Room. Humans and bridges connect to the Room, the Control Plane and RLM manage lifecycle around it, and every agent is represented through a 1:1 attached sidecar. The sidecar speaks ASP, receives delegated requests plus signed mandates, and invokes or polls the passive agent locally.
 
-```mermaid
-flowchart TB
-    user1["Human User"] -->|"direct or via bridge"| room["Workspace Room"]
-    user2["Human Channel"] -->|"bridge session"| room
-    peer["Peer Room / Federated Link"] -->|"trusted ASP link"| room
+```
+ [Human User] ------------------------------------------\
+ [Human Channel] -- bridge session ---------------------+--> [Workspace Room] --> [Audit Log]
+ [Peer Room / Federated Link] -- trusted ASP link -----/
 
-    cp["Control Plane"] -->|"routing + policy + lifecycle"| room
-    cp -->|"spawn / suspend / resume"| rlm["Runtime Lifecycle Manager"]
+ [Control Plane] -- routing + policy + lifecycle -----> [Workspace Room]
+ [Control Plane] -- spawn / suspend / resume ---------> [Runtime Lifecycle Manager]
 
-    room -->|"delegated text + signed mandate"| sidecar1["Sidecar: agent1"]
-    room -->|"delegated text + signed mandate"| sidecar2["Sidecar: agent2"]
-    room -->|"resource_call"| ers["Environment / Resource Service"]
-    room -->|"append"| audit["Audit Log"]
+ [Workspace Room] -- delegated text + signed mandate -> [Sidecar: agent1] -- invoke / poll -> [Passive Agent 1]
+ [Workspace Room] -- delegated text + signed mandate -> [Sidecar: agent2] -- invoke / poll -> [Passive Agent 2]
+ [Workspace Room] -- resource_call -------------------> [Environment / Resource Service]
 
-    sidecar1 -->|"invoke / poll"| agent1["Passive Agent 1"]
-    sidecar2 -->|"invoke / poll"| agent2["Passive Agent 2"]
-
-    rlm -->|"spawns + resumes"| sidecar1
-    rlm -->|"spawns + resumes"| sidecar2
-    rlm -->|"provisions"| ers
+ [Runtime Lifecycle Manager] -- spawns + resumes -----> [Sidecar: agent1]
+ [Runtime Lifecycle Manager] -- spawns + resumes -----> [Sidecar: agent2]
+ [Runtime Lifecycle Manager] -- provisions -----------> [Environment / Resource Service]
 ```
 
 ---
@@ -513,12 +512,7 @@ For cross-workspace operations in v1, approval is governed by the **source works
 
 ### 5.2 Create
 
-```bash
-$ relay workspace create myns/myproject \
-    -h claude -m opus-4.5 \
-    -u me \
-    -r github.com/myorg/myproject
-```
+Creating a workspace requires an identity, an initial membership set, an agent harness/model selection, and any initial environment or context inputs required by the deployment.
 
 The Control Plane:
 
@@ -539,16 +533,11 @@ The new session is established by the attached sidecar, not by the agent process
 
 ### 5.4 Channels
 
-A workspace can have multiple channel bindings, each backed by a client bridge:
-
-```bash
-$ relay workspace myns/myproject connect \
-    -p telegram -b mybot -t myproject-thread
-```
+A workspace can have multiple channel bindings, each backed by a client bridge. A binding records the external protocol, bridge instance, and an opaque external resource reference such as a thread, channel, or room identifier.
 
 The Control Plane:
 
-1. Registers the channel binding (Telegram bot `mybot`, thread `myproject-thread`)
+1. Registers the channel binding metadata
 2. Spawns or configures a Telegram Bridge process
 3. The bridge opens an ASP session to the workspace's Room
 4. Messages in the Telegram thread flow bidirectionally through the bridge
@@ -563,8 +552,8 @@ The Control Plane maintains the following state (Raft-replicated):
 
 ```yaml
 cluster:
-  name: health-samurai
-  endpoint: relay.health-samurai.io
+  name: example-mesh
+  endpoint: mesh.example
 
 workspaces:
   myns/myproject:
@@ -598,8 +587,7 @@ workspaces:
     channels:
       telegram:
         bridge: telegram-bridge-01
-        bot: mybot
-        thread: myproject-thread
+        external_ref: opaque://telegram/thread/12345
         status: connected
     approval_policy:
       risk_low: auto
@@ -706,11 +694,9 @@ Every Room writes messages to an append-only audit log persisted by the Control 
 | `payload_hash` | Hash of payload (or full payload, configurable) |
 | `approval` | Approver identity and decision, if applicable |
 
-The log is queryable via the Control Plane API:
+An implementation may expose the audit log through a CLI, API, or UI. An illustrative excerpt:
 
-```bash
-$ relay workspace myns/myproject log
-
+```
 14:01  itbaron    "review the project, what's the stack"
 14:02  claude     Analyzed structure, 4 packages
 14:05  itbaron    "add zod schemas for all endpoints"
@@ -779,7 +765,7 @@ Because Rooms are ASP participants, the same model extends to federation across 
 Multiple clusters within the same organization are federated by linking boundary Rooms. The Control Planes remain independent; only the boundary Rooms are bridged.
 
 ```
-[Cluster: health-samurai]         [Cluster: personal]
+[Cluster: example-mesh]           [Cluster: personal]
   [CP-A]                            [CP-B]
     |                                  |
   [Room A1] ←── ASP ──→ [Room B1]  [Room B2]
