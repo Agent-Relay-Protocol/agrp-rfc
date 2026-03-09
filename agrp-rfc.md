@@ -214,9 +214,34 @@ Examples:
 | Telegram Bridge | Telegram Bot API (thread-bound) | `bridge` |
 | Slack Bridge | Slack Events API (channel-bound) | `bridge` |
 | CLI Client | Native AGSP over WebSocket | `human` (direct, no bridge needed) |
-| IDE / File Mount | FUSE + AGSP sidecar | `bridge` |
+| Local FS Bridge | FUSE-mounted local filesystem binding | `bridge` |
+| diskd Bridge | diskd.ai API / CLI / mounted drive | `bridge` |
 
-A bridge registers with the Exchange using role `bridge` and declares metadata about the external channel it represents. Messages flowing through a bridge carry the original author's identity, not the bridge's.
+A bridge registers with the Exchange using role `bridge` and declares metadata about the external channel it represents. Messages flowing through a bridge carry the original author's identity, not the bridge's. For example, a `Local FS Bridge` can project Exchange-backed conversation or resource views into a FUSE mount, and a `diskd Bridge` can project the same kinds of views into a diskd-mounted or synced workspace, while still translating all reads and writes into normal AGSP messages and Exchange-mediated policy checks. For filesystem-backed bridges, the bridge should be configured with an explicit sync root or chroot-style base directory; only paths under that directory are projected into or out of AGRP.
+
+#### 2.4.1 Mental Model
+
+The clean mental model is:
+
+- the external system stays external
+- the bridge joins the Exchange as one AGSP participant
+- the bridge translates external actions into AGSP messages
+- the Exchange applies the same routing, authorization, mandate, and approval rules as for any other participant
+- for filesystem-backed bridges, sync is rooted at one explicit chroot or sync directory, not the whole host filesystem
+
+A bridge therefore does **not** bypass AGRP. It is a protocol adapter, not a privileged side channel into realm state.
+
+#### 2.4.2 Practical Examples
+
+Non-normative examples:
+
+- **Telegram Bridge:** a message posted in a Telegram thread becomes an AGSP `text` or `exchange_message` attributed to the human who wrote it. A reply emitted by an agent returns through the bridge and is posted back into the same thread.
+- **Local FS Bridge or diskd Bridge, sync root:** the bridge is configured with one base directory such as `/mnt/agrp/myns/myproject` or `~/diskd/agrp/myns/myproject`. Only files under that root participate in projection and sync.
+- **Local FS Bridge or diskd Bridge, conversation view:** a mounted or synced file such as `conversation/inbox.md` can be a local projection of Exchange transcript state. Reading it does not bypass AGRP; it reads a bridge-managed view of Exchange-visible data.
+- **Local FS Bridge or diskd Bridge, delegation by write:** writing a file such as `outbox/claude.md` can cause the bridge to emit a `text` message addressed to `claude`. The Exchange then attaches a mandate if needed and routes it exactly as if the user had delegated through CLI or chat.
+- **Local FS Bridge or diskd Bridge, resource request:** writing a structured file such as `resources/root.request.json` can cause the bridge to emit a `resource_call` to `resource://namespace/realm/root`. Approval and policy still happen at the Exchange.
+
+The exact file layout, FUSE binding, sync model, chroot/sync-root configuration, and read/write mapping for a filesystem-backed bridge are implementation-specific. AGRP only standardizes the Exchange-facing side: the bridge emits and receives AGSP messages.
 
 ### 2.5 Control Plane
 
@@ -277,7 +302,7 @@ AGRP defines three planes:
 
 ### 3.2 Realm Topology (Single Realm)
 
-A typical realm with CLI, Telegram, and a single agent:
+A typical realm with CLI, Telegram, a filesystem-oriented bridge, and a single agent:
 
 ```
                      [Control Plane]
@@ -287,9 +312,9 @@ A typical realm with CLI, Telegram, and a single agent:
  [CLI] ── AGSP ──→ [  Exchange  ] ←── AGSP ── [Telegram Bridge]
                       ↑   ↑                |
                       |   |                |
-                      |   +──── AGSP ── [File Mount Bridge]
+                      |   +──── AGSP ── [diskd / FUSE Bridge]
                       |                     |
-                      |               [FUSE → ~/relay/ns/proj]
+                      |    [diskd mount / sync folder / FUSE mount]
                       |
                    AGSP via
                  attached sidecar
@@ -302,6 +327,8 @@ A typical realm with CLI, Telegram, and a single agent:
 ```
 
 All external Exchange edges in this example are AGSP sessions. The agent process is not. The Exchange talks to the agent through its attached sidecar, and the sidecar talks to the local agent over ACP. When the agent produces a reply over ACP, the sidecar emits the corresponding AGSP message and the Exchange fans it out to CLI and both bridges. When a human types in the Telegram thread, the bridge forwards it as an AGSP message attributed to that human; if the message has no explicit agent target, the Exchange stores it as an `exchange_message` in the local transcript/history when enabled.
+
+In practical terms, the Telegram bridge maps chat-thread events to AGSP messages, while a filesystem-oriented bridge maps mounted-drive, synced-folder, or FUSE-mounted reads and writes to AGSP messages. Both remain ordinary Exchange participants from the protocol point of view.
 
 ### 3.2.1 Agent Attachment and Join Flow
 
